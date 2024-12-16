@@ -1,6 +1,6 @@
 {
-  "name": "next-themes",
-  "version": "0.4.4",
+  "name": "@allen-career-institute/next-themes",
+  "version": "0.4.4-alpha-0",
   "license": "MIT",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",

@@ -37,7 +37,7 @@ const Theme = ({
   scriptProps
 }: ThemeProviderProps) => {
   const [theme, setThemeState] = React.useState(() => getTheme(storageKey, defaultTheme))
-  const [resolvedTheme, setResolvedTheme] = React.useState(() => getTheme(storageKey))
+  const [resolvedTheme, setResolvedTheme] = React.useState(() => getTheme(storageKey, defaultTheme))
   const attrs = !value ? themes : Object.values(value)
 
   const applyTheme = React.useCallback(theme => {
@@ -212,7 +212,7 @@ const ThemeScript = React.memo(
 
 // Helpers
 const getTheme = (key: string, fallback?: string) => {
-  if (isServer) return undefined
+  if (isServer) return fallback
   let theme
   try {
     theme = localStorage.getItem(key) || undefined
