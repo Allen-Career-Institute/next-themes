@@ -105,11 +105,13 @@ const Theme = ({
   const handleMediaQuery = React.useCallback(
     (e: MediaQueryListEvent | MediaQueryList) => {
       const resolved = getSystemTheme(e)
-      setResolvedTheme(resolved)
-
-      if (theme === 'system' && enableSystem && !forcedTheme) {
-        applyTheme('system')
-      }
+      React.startTransition(() => {
+        setResolvedTheme(resolved)
+        
+        if (theme === 'system' && enableSystem && !forcedTheme) {
+          applyTheme('system')
+        }
+      })
     },
     [theme, forcedTheme]
   )
@@ -120,7 +122,10 @@ const Theme = ({
 
     // Intentionally use deprecated listener methods to support iOS & old browsers
     media.addListener(handleMediaQuery)
-    handleMediaQuery(media)
+    // Wrap initial call in startTransition as well
+    React.startTransition(() => {
+      handleMediaQuery(media)
+    })
 
     return () => media.removeListener(handleMediaQuery)
   }, [handleMediaQuery])
