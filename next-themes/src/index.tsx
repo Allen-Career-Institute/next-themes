@@ -37,47 +37,55 @@ const Theme = ({
   scriptProps
 }: ThemeProviderProps) => {
   const [theme, setThemeState] = React.useState(() => getTheme(storageKey, defaultTheme))
-  const [resolvedTheme, setResolvedTheme] = React.useState(() => getTheme(storageKey))
+  const [resolvedTheme, setResolvedTheme] = React.useState(() => getTheme(storageKey, defaultTheme))
   const attrs = !value ? themes : Object.values(value)
 
-  const applyTheme = React.useCallback(theme => {
-    let resolved = theme
-    if (!resolved) return
+  const applyTheme = React.useCallback(
+    theme => {
+      let resolved = theme
+      if (!resolved) return
 
-    // If theme is system, resolve it before setting theme
-    if (theme === 'system' && enableSystem) {
-      resolved = getSystemTheme()
-    }
+      // If theme is system, resolve it before setting theme
+      if (theme === 'system' && enableSystem) {
+        resolved = getSystemTheme()
+      }
 
-    const name = value ? value[resolved] : resolved
-    const enable = disableTransitionOnChange ? disableAnimation(nonce) : null
-    const d = document.documentElement
+      const name = value ? value[resolved] : resolved
+      const enable = disableTransitionOnChange ? disableAnimation(nonce) : null
+      const d = document.documentElement
 
-    const handleAttribute = (attr: Attribute) => {
-      if (attr === 'class') {
-        d.classList.remove(...attrs)
-        if (name) d.classList.add(name)
-      } else if (attr.startsWith('data-')) {
-        if (name) {
-          d.setAttribute(attr, name)
-        } else {
-          d.removeAttribute(attr)
+      const handleAttribute = (attr: Attribute) => {
+        if (attr === 'class') {
+          if (name) {
+            d.classList.add(name)
+            d.classList.remove(...attrs.filter(c => c !== name))
+          } else {
+            d.classList.remove(...attrs)
+            if (name) d.classList.add(name)
+          }
+        } else if (attr.startsWith('data-')) {
+          if (name) {
+            d.setAttribute(attr, name)
+          } else {
+            d.removeAttribute(attr)
+          }
         }
       }
-    }
 
-    if (Array.isArray(attribute)) attribute.forEach(handleAttribute)
-    else handleAttribute(attribute)
+      if (Array.isArray(attribute)) attribute.forEach(handleAttribute)
+      else handleAttribute(attribute)
 
-    if (enableColorScheme) {
-      const fallback = colorSchemes.includes(defaultTheme) ? defaultTheme : null
-      const colorScheme = colorSchemes.includes(resolved) ? resolved : fallback
-      // @ts-ignore
-      d.style.colorScheme = colorScheme
-    }
+      if (enableColorScheme) {
+        const fallback = colorSchemes.includes(defaultTheme) ? defaultTheme : null
+        const colorScheme = colorSchemes.includes(resolved) ? resolved : fallback
+        // @ts-ignore
+        d.style.colorScheme = colorScheme
+      }
 
-    enable?.()
-  }, [nonce])
+      enable?.()
+    },
+    [nonce]
+  )
 
   const setTheme = React.useCallback(
     value => {
@@ -97,11 +105,13 @@ const Theme = ({
   const handleMediaQuery = React.useCallback(
     (e: MediaQueryListEvent | MediaQueryList) => {
       const resolved = getSystemTheme(e)
-      setResolvedTheme(resolved)
-
-      if (theme === 'system' && enableSystem && !forcedTheme) {
-        applyTheme('system')
-      }
+      React.startTransition(() => {
+        setResolvedTheme(resolved)
+        
+        if (theme === 'system' && enableSystem && !forcedTheme) {
+          applyTheme('system')
+        }
+      })
     },
     [theme, forcedTheme]
   )
@@ -112,7 +122,10 @@ const Theme = ({
 
     // Intentionally use deprecated listener methods to support iOS & old browsers
     media.addListener(handleMediaQuery)
-    handleMediaQuery(media)
+    // Wrap initial call in startTransition as well
+    React.startTransition(() => {
+      handleMediaQuery(media)
+    })
 
     return () => media.removeListener(handleMediaQuery)
   }, [handleMediaQuery])
@@ -212,7 +225,7 @@ const ThemeScript = React.memo(
 
 // Helpers
 const getTheme = (key: string, fallback?: string) => {
-  if (isServer) return undefined
+  if (isServer) return fallback
   let theme
   try {
     theme = localStorage.getItem(key) || undefined
