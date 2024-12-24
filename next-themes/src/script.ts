@@ -19,8 +19,10 @@ export const script = (
       const classes = isClass && value ? themes.map(t => value[t] || t) : themes
       if (isClass) {
         const finalClass = value[theme] || theme
-        el.classList.add(finalClass)
-        el.classList.remove(...classes.filter(c => c !== finalClass))
+        if (!el.classList.contains(finalClass)) {
+          el.classList.add(finalClass)
+          el.classList.remove(...classes.filter(c => c !== finalClass))
+        }
       } else {
         el.setAttribute(attr, theme)
       }
@@ -30,7 +32,7 @@ export const script = (
   }
 
   function setColorScheme(theme: string) {
-    if (enableColorScheme && systemThemes.includes(theme)) {
+    if (enableColorScheme && systemThemes.includes(theme) && el.style.colorScheme !== theme) {
       el.style.colorScheme = theme
     }
   }
